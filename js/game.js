@@ -580,9 +580,27 @@ function addBolt(pts, color) {
 // ---------------------------------------------------------------------
 //  Desenho
 // ---------------------------------------------------------------------
-const bg = document.createElement('canvas');
-bg.width = W; bg.height = H;
-drawBackground(bg.getContext('2d'));
+// Resolução de desenho: o jogo pensa em 960×640 "unidades", mas o canvas tem tantos pixels
+// quanto ocupa de verdade na tela (tamanho na página × zoom do sistema). Sem isso, o navegador
+// esticava um quadro de 960px até 2–3× num monitor grande e tudo ficava borrado.
+let RS = 1;                                  // pixels reais do canvas por unidade do jogo
+const bg = document.createElement('canvas'); // cenário pré-desenhado, na mesma resolução
+
+function fitCanvas() {
+  const r = cv.getBoundingClientRect();
+  if (!r.width) return;
+  const s = Math.max(1, Math.min(4, r.width * (window.devicePixelRatio || 1) / W));
+  if (Math.abs(s - RS) < 0.01 && bg.width) return;
+  RS = s;
+  cv.width = Math.round(W * s); cv.height = Math.round(H * s);
+  bg.width = cv.width; bg.height = cv.height;
+  const b = bg.getContext('2d');
+  b.setTransform(s, 0, 0, s, 0, 0);
+  drawBackground(b);
+}
+fitCanvas();
+new ResizeObserver(fitCanvas).observe(cv);
+matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener?.('change', fitCanvas);  // mudou o zoom do sistema
 
 function tracePath(c) {
   c.beginPath();
@@ -1166,7 +1184,9 @@ function drawEffects(c) {
 }
 
 function render() {
-  ctx.drawImage(bg, 0, 0);
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);       // tudo abaixo continua em unidades do jogo (960×640)
+  ctx.imageSmoothingQuality = 'high';          // reduz os sprites grandes com suavização de qualidade
+  ctx.drawImage(bg, 0, 0, W, H);
   for (const t of G.towers) {
     if (!t.s.aura) continue;
     ctx.fillStyle = `rgba(133,193,233,${0.08 + Math.sin(G.time * 3) * 0.03})`;
@@ -1230,8 +1250,11 @@ function buildShop() {
     b.className = 'tower-btn';
     b.dataset.key = key;
     const ic = document.createElement('canvas');
-    ic.width = 56; ic.height = 56;
+    const dpr = window.devicePixelRatio || 1;       // ícone na resolução real da tela
+    ic.width = ic.height = Math.round(56 * dpr);
     const c = ic.getContext('2d');
+    c.scale(dpr, dpr);
+    c.imageSmoothingQuality = 'high';
     const drawn = SHEETS[key] && SHEETS[key].ready;
     c.translate(28, drawn ? 50 : 32);
     drawTowerSprite(c, key, [0, 0, 0], drawn ? 0 : -Math.PI / 2, 0, computeStats(key, [0, 0, 0]));
@@ -1296,11 +1319,19 @@ const popup = (() => {
 
   function save() { localStorage.setItem(KEY, JSON.stringify(rect)); }
 
+  // ao abrir: garante a janela inteira na tela (a posição salva pode ser de uma tela maior)
+  function fitInside() {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    rect.x = Math.max(8, Math.min(rect.x, innerWidth - w - 8));
+    rect.y = Math.max(8, Math.min(rect.y, innerHeight - h - 8));
+    apply();
+  }
+
   function show(on) {
     if (on === visible) return;
     visible = on;
     el.classList.toggle('hidden', !on);
-    if (on) { if (!rect) rect = defaultRect(); apply(); }
+    if (on) { if (!rect) rect = defaultRect(); apply(); fitInside(); }
   }
 
   // arrastar pelo título
@@ -1343,7 +1374,7 @@ const popup = (() => {
   }
 
   $('popClose').addEventListener('click', () => { G.selected = null; });
-  addEventListener('resize', () => { if (visible) apply(); });
+  addEventListener('resize', () => { if (visible) { apply(); fitInside(); } });
 
   return { show, reset() { rect = null; localStorage.removeItem(KEY); if (visible) { rect = defaultRect(); apply(); } } };
 })();
