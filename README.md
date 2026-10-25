@@ -35,7 +35,7 @@ Ninja, Canhoneiro e Bardo foram **retirados do jogo**; os dados estão em `js/_a
 
 ## Inimigos
 Cada golpe tira o `damage` do guardião (1 sem upgrade). Vida vem da planilha "Protect The Realm Project".
-Ao morrer dá $ = metade da vida (CONFIG.killReward); se passar, tira vidas = vida. Bônus por onda: $60 + $2 × onda.
+Ao morrer dá $ = metade da vida (`CONFIG.killReward`); se passar, tira vidas = vida. Bônus por onda: $30 + 30% do orçamento da onda. Ouro inicial: $500.
 
 **Voadores (✈)** só são atingidos por guardiões de ataque à distância (`antiAir`; hoje só o Arqueiro).
 O Cavaleiro (corpo a corpo, `antiAir: false`) ignora voadores. Na tela eles flutuam acima do caminho, com sombra no chão.
@@ -52,9 +52,13 @@ O Cavaleiro (corpo a corpo, `antiAir: false`) ignora voadores. Na tela eles flut
 | Banshee ✈ | 8 | 1.1 | | Wyvern ✈ | 17 | 1.2 |
 | Orc | 9 | 0.9 | | | | |
 
+### Ondas (geradas por curva de dificuldade)
+Cada onda tem um **orçamento de vida** que cresce suave: `WAVE_CURVE` em `data.js` (onda 1 = 26, +13,5% por onda).
+`WAVE_PLAN` diz quais monstros vêm em cada onda e a fatia do orçamento de cada um; as quantidades saem da conta.
+Voadores custam 2× no orçamento (só o Arqueiro acerta) e nenhuma onda é só de voadores.
 Um monstro novo entra a cada 2 ondas, na ordem da planilha (Slime nas ondas 1–2, primeiro voador — Morcego — na 7).
-Voadores vêm em menor quantidade que os terrestres (só o Arqueiro dá conta deles).
-Balanceado por bot: jogador atento zera com ~95 vidas; jogador mediano chega às ondas 15–18. Velocidade e tamanho (`size`) estão em `ENEMIES`.
+Mais fácil/difícil: mexa em `base` (começo) ou `growth` (ritmo). Relatório onda a onda: `node tools/wave_report.js`.
+Balanceado por bot: jogador atento zera; jogador mediano chega às ondas 18–19. Velocidade e tamanho (`size`) estão em `ENEMIES`.
 `assets/src/arqueiro_longo.jpg` (Arqueiro Arco Longo) está recortado mas fora do jogo — não está na planilha.
 
 ## Arte (guardiões e inimigos)

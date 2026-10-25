@@ -5,12 +5,13 @@
 // =====================================================================
 
 const CONFIG = {
-  startMoney: 650,
+  startMoney: 500,
   startLives: 100,
   baseSpeed: 60,              // px/s de um monstro com velocidade 1.0
   sellRate: 0.7,              // venda devolve 70% do que foi gasto
-  waveBonus: w => 60 + 2 * w,  // $ ao terminar a onda w
-  killReward: hp => Math.max(1, Math.round(hp * 0.5)),  // $ por monstro morto (padrão; ENEMIES.reward sobrepõe)
+  // Ouro acompanha a curva de dificuldade (waveBudget, lá embaixo em ONDAS):
+  waveBonus: w => Math.round(30 + waveBudget(w) * 0.3),  // $ ao terminar a onda w
+  killReward: hp => Math.max(1, Math.round(hp * 0.5)),     // $ por monstro morto (padrão; ENEMIES.reward sobrepõe)
 };
 
 // ---------------------------------------------------------------------
@@ -188,51 +189,72 @@ const TOWERS = {
 };
 
 // ---------------------------------------------------------------------
-//  ONDAS — cada onda é uma lista de grupos que correm em paralelo.
-//  g(monstro, quantidade, intervalo_s, atraso_inicial_s, multiplicador_de_vida)
-//  Um monstro novo aparece a cada 2 ondas, na ordem de vida da planilha.
+//  ONDAS — geradas a partir de uma CURVA DE DIFICULDADE.
+//  Cada onda tem um "orçamento" de vida (soma da vida dos monstros) que cresce suave.
+//  Voadores custam mais no orçamento (só o Arqueiro acerta neles).
+//  WAVE_PLAN diz QUAIS monstros vêm em cada onda e que fatia do orçamento cada um leva;
+//  as quantidades saem da conta. Para deixar mais fácil/difícil, mexa só em WAVE_CURVE.
 // ---------------------------------------------------------------------
-const g = (type, count, gap, delay = 0, hpMul = 1) => ({ type, count, gap, delay, hpMul });
+const WAVE_CURVE = {
+  base: 26,                       // orçamento da onda 1 (vida total)
+  growth: 1.135,                  // cada onda tem +13,5% de orçamento que a anterior
+  airWeight: 2,                   // 1 de vida voadora conta como 2 no orçamento (só o Arqueiro acerta)
+  duration: w => 14 + w * 0.4,    // segundos que os monstros levam p/ entrar
+  groupDelay: 2.5,                // atraso entre os grupos da mesma onda
+};
+const waveBudget = w => Math.round(WAVE_CURVE.base * Math.pow(WAVE_CURVE.growth, w - 1));
 
-const WAVES = [
-  /* 1 */ [g('slime', 18, 0.75)],
-  /* 2 */ [g('slime', 15, 0.6), g('aranha', 14, 0.75, 4)],
-  /* 3 */ [g('zumbi', 9, 1.14), g('aranha', 18, 0.57, 3)],
-  /* 4 */ [g('zumbi', 18, 0.82), g('aranha', 18, 0.41, 4)],
-  /* 5 */ [g('esqueleto', 12, 0.98), g('zumbi', 12, 0.82, 4)],
-  /* 6 */ [g('esqueleto', 21, 0.73), g('aranha', 24, 0.33, 3)],
-  /* 7 */ [g('morcego', 3, 1.78), g('esqueleto', 12, 0.73, 4)],      // 1º voador: precisa de Arqueiro
-  /* 8 */ [g('morcego', 5, 1.29), g('zumbi', 18, 0.65, 3)],
-  /* 9 */ [g('goblin', 12, 0.9), g('morcego', 4, 1.29, 4)],
-  /*10 */ [g('goblin', 21, 0.65), g('esqueleto', 21, 0.57, 3)],
-  /*11 */ [g('diabrete', 15, 0.82), g('morcego', 4, 1.13, 4)],
-  /*12 */ [g('diabrete', 24, 0.57), g('goblin', 15, 0.65, 3)],
-  /*13 */ [g('banshee', 5, 1.48), g('morcego', 5, 1.03, 4)],
-  /*14 */ [g('banshee', 7, 1.17), g('goblin', 24, 0.41, 3)],
-  /*15 */ [g('orc', 15, 0.9), g('banshee', 4, 1.32, 4)],
-  /*16 */ [g('orc', 24, 0.65), g('diabrete', 24, 0.41, 3)],
-  /*17 */ [g('harpia', 5, 1.48), g('orc', 15, 0.73, 4)],
-  /*18 */ [g('harpia', 7, 1.03), g('morcego', 7, 0.74, 3)],
-  /*19 */ [g('troll', 12, 1.14), g('harpia', 5, 1.17, 4)],
-  /*20 */ [g('troll', 21, 0.82), g('banshee', 7, 0.89, 3)],
-  /*21 */ [g('minotauro', 12, 1.06), g('troll', 15, 0.82, 4)],
-  /*22 */ [g('minotauro', 21, 0.73), g('orc', 30, 0.41, 3)],
-  /*23 */ [g('gargula', 5, 1.63), g('minotauro', 15, 0.73, 4)],
-  /*24 */ [g('gargula', 7, 1.17), g('harpia', 7, 0.74, 3)],
-  /*25 */ [g('quimera', 15, 0.9), g('gargula', 5, 1.17, 4)],
-  /*26 */ [g('quimera', 24, 0.65), g('troll', 21, 0.57, 3)],
-  /*27 */ [g('golem', 12, 1.31), g('quimera', 18, 0.65, 4)],
-  /*28 */ [g('golem', 21, 0.9), g('minotauro', 24, 0.49, 3)],
-  /*29 */ [g('dragao', 4, 2.21), g('golem', 15, 0.82, 4)],
-  /*30 */ [g('wyvern', 5, 1.63), g('dragao', 5, 1.48, 3), g('golem', 15, 0.82, 6)],
+//              [monstro, fatia do orçamento]  — um monstro novo a cada 2 ondas, na ordem da planilha.
+//              Nenhuma onda é só de voadores (ficavam picos de dificuldade: Cavaleiro não acerta).
+const WAVE_PLAN = [
+  /* 1 */ [['slime', 1]],
+  /* 2 */ [['slime', 0.5], ['aranha', 0.5]],
+  /* 3 */ [['zumbi', 0.55], ['aranha', 0.45]],
+  /* 4 */ [['zumbi', 0.55], ['aranha', 0.45]],
+  /* 5 */ [['esqueleto', 0.55], ['zumbi', 0.45]],
+  /* 6 */ [['esqueleto', 0.55], ['aranha', 0.45]],
+  /* 7 */ [['morcego', 0.4], ['esqueleto', 0.6]],     // 1º voador: precisa de Arqueiro
+  /* 8 */ [['morcego', 0.45], ['zumbi', 0.55]],
+  /* 9 */ [['goblin', 0.55], ['morcego', 0.45]],
+  /*10 */ [['goblin', 0.55], ['esqueleto', 0.45]],
+  /*11 */ [['diabrete', 0.55], ['morcego', 0.45]],
+  /*12 */ [['diabrete', 0.55], ['goblin', 0.45]],
+  /*13 */ [['banshee', 0.45], ['diabrete', 0.55]],
+  /*14 */ [['banshee', 0.45], ['goblin', 0.55]],
+  /*15 */ [['orc', 0.55], ['banshee', 0.45]],
+  /*16 */ [['orc', 0.55], ['diabrete', 0.45]],
+  /*17 */ [['harpia', 0.45], ['orc', 0.55]],
+  /*18 */ [['harpia', 0.45], ['orc', 0.55]],
+  /*19 */ [['troll', 0.55], ['harpia', 0.45]],
+  /*20 */ [['troll', 0.55], ['banshee', 0.45]],
+  /*21 */ [['minotauro', 0.55], ['troll', 0.45]],
+  /*22 */ [['minotauro', 0.55], ['orc', 0.45]],
+  /*23 */ [['gargula', 0.45], ['minotauro', 0.55]],
+  /*24 */ [['gargula', 0.45], ['troll', 0.55]],
+  /*25 */ [['quimera', 0.55], ['gargula', 0.45]],
+  /*26 */ [['quimera', 0.55], ['troll', 0.45]],
+  /*27 */ [['golem', 0.55], ['quimera', 0.45]],
+  /*28 */ [['golem', 0.55], ['minotauro', 0.45]],
+  /*29 */ [['dragao', 0.45], ['golem', 0.55]],
+  /*30 */ [['wyvern', 0.35], ['dragao', 0.3], ['golem', 0.35]],
 ];
 
-// Modo livre (depois da onda 30): monstros fortes, cada vez mais numerosos e com mais vida.
+// Um grupo de monstros: g(monstro, quantidade, intervalo_s, atraso_inicial_s, multiplicador_de_vida)
+const g = (type, count, gap, delay = 0, hpMul = 1) => ({ type, count, gap, delay, hpMul });
+
+function buildWave(plan, w, hpMul = 1) {
+  const budget = waveBudget(w), dur = WAVE_CURVE.duration(w);
+  return plan.map(([type, share], i) => {
+    const d = ENEMIES[type];
+    const cost = d.hp * hpMul * (d.flying ? WAVE_CURVE.airWeight : 1);
+    const count = Math.max(2, Math.round(budget * share / cost));
+    return g(type, count, +(dur / count).toFixed(2), i * WAVE_CURVE.groupDelay, hpMul);
+  });
+}
+
+const WAVES = WAVE_PLAN.map((plan, i) => buildWave(plan, i + 1));
+
+// Modo livre (depois da onda 30): a mesma curva continua subindo.
 function freeplayWave(n) {
-  const k = n - WAVES.length, mul = 1 + k * 0.15;
-  return [
-    g('wyvern', 10 + k * 2, 0.9, 0, mul),
-    g('dragao', 10 + k * 2, 0.9, 3, mul),
-    g('golem', 8 + k, 1.0, 6, mul),
-  ];
+  return buildWave([['wyvern', 0.35], ['dragao', 0.3], ['golem', 0.35]], n);
 }
