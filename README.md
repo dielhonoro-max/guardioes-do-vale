@@ -68,4 +68,4 @@ Gera `assets/<nome>.png` + `js/sprites-data.js`. `:glow` remove o halo do crista
 
 ## Atalhos
 `1` `2` escolher guardião · `Shift+clique` coloca vários · `Espaço` onda · `F` velocidade · `P` pausa ·
-`,` `.` `/` evoluir caminhos 1/2/3 · `Tab` modo de mira · `Del` vender · `Esc` cancelar
+`Q` Dano · `W` Alcance · `E` Rapidez (evoluir o guardião selecionado) · `Tab` modo de mira · `Del` vender · `Esc` cancelar

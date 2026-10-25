@@ -20,6 +20,7 @@ const DEFAULT_STATS = {
 };
 const FRAG_STATS = Object.assign({}, DEFAULT_STATS, { damage: 1, pierce: 1, projSpeed: 420, kind: 'frag' });
 const MODES = ['first', 'last', 'strong', 'close'];
+const UPGRADE_KEYS = 'QWE';   // teclas p/ evoluir os caminhos 1/2/3 (Dano, Alcance, Rapidez) do guardião selecionado
 const MODE_LABEL = { first: 'Primeiro', last: 'Último', strong: 'Mais forte', close: 'Mais perto' };
 
 // ---------------------------------------------------------------------
@@ -1402,7 +1403,7 @@ function panelHTML() {
         <span class="un">${st.up.name}</span><span class="uc">$${fmt(st.up.cost)}</span>
         <span class="ud">${st.up.desc}</span></button>`;
     h += `<div class="path" style="--c:${path.color}"><div class="phead"><span class="pname">${path.name}</span>
-      <span class="pips">${pips}</span><kbd>${',./'[p]}</kbd></div>${btn}</div>`;
+      <span class="pips">${pips}</span><kbd>${UPGRADE_KEYS[p]}</kbd></div>${btn}</div>`;
   });
   h += `<button class="sell" data-act="sell">Vender por $${fmt(sellValue(t))}</button>`;
   return h;
@@ -1524,7 +1525,10 @@ addEventListener('keydown', ev => {
   else if (k === ' ') { ev.preventDefault(); startWave(); }
   else if (k === 'p' || k === 'P') G.paused = !G.paused;
   else if (k === 'f' || k === 'F') G.speed = G.speed >= 3 ? 1 : G.speed + 1;
-  else if (G.selected && ',./'.includes(k)) { ev.preventDefault(); buyUpgrade(G.selected, ',./'.indexOf(k)); }
+  else if (G.selected && k.length === 1 && UPGRADE_KEYS.includes(k.toUpperCase())) {
+    ev.preventDefault();
+    buyUpgrade(G.selected, UPGRADE_KEYS.indexOf(k.toUpperCase()));
+  }
   else if (G.selected && (k === 'Delete' || k === 'Backspace')) sellTower(G.selected);
   else if (G.selected && k === 'Tab') { ev.preventDefault(); G.selected.mode = MODES[(MODES.indexOf(G.selected.mode) + 1) % MODES.length]; }
 });
