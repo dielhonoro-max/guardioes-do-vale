@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guardiões do Vale — Tower Defense</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <main id="stage">
+      <canvas id="game" width="960" height="640"></canvas>
+      <div id="toast"></div>
+      <div id="overlay" class="hidden">
+        <div class="box">
+          <h2 id="ovTitle"></h2>
+          <p id="ovText"></p>
+          <div id="ovBtns"></div>
+        </div>
+      </div>
+    </main>
+
+    <aside id="side">
+      <h1>Guardiões <span>do Vale</span></h1>
+      <div class="stats">
+        <div title="Vidas">❤️ <b id="lives"></b></div>
+        <div title="Dinheiro">💰 <b id="money"></b></div>
+        <div title="Onda">🌊 <b id="wave"></b></div>
+      </div>
+
+      <div class="section">Guardiões</div>
+      <div id="shop"></div>
+      <div id="shopDesc"></div>
+
+      <div class="controls">
+        <button id="btnPlay" class="primary"></button>
+        <div class="row">
+          <button id="btnSpeed"></button>
+          <button id="btnPause"></button>
+          <label class="auto"><input type="checkbox" id="chkAuto"> Auto</label>
+        </div>
+      </div>
+      <div class="help">
+        <kbd>1</kbd> Cavaleiro · <kbd>2</kbd> Arqueiro · <kbd>Espaço</kbd> onda · <kbd>F</kbd> velocidade · <kbd>P</kbd> pausa<br>
+        <kbd>,</kbd><kbd>.</kbd><kbd>/</kbd> evoluir · <kbd>Tab</kbd> mira · <kbd>Del</kbd> vender · <kbd>Esc</kbd> cancelar
+      </div>
+    </aside>
+  </div>
+
+  <!-- Janela de evoluções: abre ao clicar num guardião; arrasta pelo título, redimensiona pelas bordas -->
+  <div id="upgradePopup" class="popup hidden">
+    <div class="popup-head" title="Arraste para mover">
+      <span class="grip">⠿</span><span class="popup-title">Evoluções</span>
+      <button id="popClose" title="Fechar (Esc)">✕</button>
+    </div>
+    <div id="panel" class="popup-body"></div>
+    <div class="rz n" data-dir="n"></div><div class="rz s" data-dir="s"></div>
+    <div class="rz e" data-dir="e"></div><div class="rz w" data-dir="w"></div>
+    <div class="rz ne" data-dir="ne"></div><div class="rz nw" data-dir="nw"></div>
+    <div class="rz se" data-dir="se"></div><div class="rz sw" data-dir="sw"></div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/sprites-data.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

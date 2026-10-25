@@ -1,0 +1,11 @@
+# Folhas de sprite originais (JPG grandes, ~62 MB) — o jogo usa as versões recortadas em assets/*.png
+assets/src/
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
